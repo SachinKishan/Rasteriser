@@ -356,27 +356,20 @@ Point ProjectVertex(Vec3f vertex)
 }
 
 
-void RenderObject(Instance instance, Image& image)
+void RenderObject(const Instance& instance, Image& image)
 {
 
    
-    TranslationMatrix mat(instance.position);
+
     for (Triangle t : instance.model.triangles)
     {
-
-        
-
-        Vec3f a=mat.multiplyVectorMatrix(t.a);
-        Vec3f b=mat.multiplyVectorMatrix(t.b);
-        Vec3f c=mat.multiplyVectorMatrix(t.c);
-        
-        
-        
+        //this can optimised
+        Vec3f a = ApplyTransform(t.a, instance.transform);
+        Vec3f b = ApplyTransform(t.b, instance.transform);
+        Vec3f c = ApplyTransform(t.c, instance.transform);
         Point q=ProjectVertex(a);
         Point r=ProjectVertex(b);
         Point s=ProjectVertex(c);
-        
-        
         DrawWireFrameTriangle(q, r, s, image,t.color);
     }
 }
@@ -395,6 +388,7 @@ int main()
     Image K(cw, ch);
     std::cout << "We Work!\n";
 
+
     /*
     * Pixel by pixel rendering
     for (int j = h - 1; j > 0; j--)
@@ -412,77 +406,17 @@ int main()
             write_color(std::cout, pixel_color);
         }
     }*/
-    
-    
-   
-    /*
-    Vec3f p1(1, 1, 1);
-    Vec3f p2(-1, 1, 1);
-    Vec3f p3(-1, -1, 1);
-    Vec3f p4(1, -1, 1);
-    Vec3f p5(1, 1, -1);
-    Vec3f p6(-1, 1, -1);
-    Vec3f p7(-1, -1, -1);
-    Vec3f p8(1, -1, -1);
-
-    
 
 
+    Vec3f position(1.5, 0, 7);
+    Vec3f rotation(0, 0, 0);
+    float scale = 2;
 
-    std::vector<Vec3f> vertices;
-    vertices.push_back(p1);
-    vertices.push_back(p2);
-    vertices.push_back(p3);
-    vertices.push_back(p4);
-    vertices.push_back(p5);
-    vertices.push_back(p6);
-    vertices.push_back(p7);
-    vertices.push_back(p8);
-    
-    
-    /*riangles
- 0 = 0, 1, 2, red
- 1 = 0, 2, 3, red
- 2 = 4, 0, 3, green
- 3 = 4, 3, 7, green
- 4 = 5, 4, 7, blue
- 5 = 5, 7, 6, blue
+    Transform t(position,rotation,scale);
+    Cube cube("A");
+    Instance cubeInstance(cube, t);
 
- 6 = 1, 5, 6, yellow
- 7 = 1, 6, 2, yellow
- 8 = 4, 5, 1, purple
- 9 = 4, 1, 0, purple
-10 = 2, 6, 7, cyan
-11 = 2, 7, 3, cyan
-    Triangle t1(p1, p2, p3, Image::kRed);
-    Triangle t2(p1, p3, p4, Image::kRed);
-    Triangle t3(p5, p1, p4, Image::kBlue);
-    Triangle t4(p5, p4, p8, Image::kBlue);
-    Triangle t5(p6, p5, p8, Image::kGreen);
-    Triangle t6(p6, p8, p7, Image::kGreen);
-    
-    Triangle t7(p2, p6, p7, Image::kPurple);
-    Triangle t8(p2, p7, p3, Image::kPurple);
-    Triangle t9(p5, p6, p2, Image::kYellow);
-    Triangle t10(p5, p2, p1, Image::kYellow);
-    Triangle t11(p2, p6, p8, Image::kCyan);
-    Triangle t12(p3, p8, p4, Image::kCyan);
-
-    vector<Triangle> tris;
-    tris.push_back(t1);
-    tris.push_back(t2);
-    tris.push_back(t3);
-    tris.push_back(t4);
-    tris.push_back(t5);
-    tris.push_back(t6);
-    tris.push_back(t7);
-    tris.push_back(t8);
-    tris.push_back(t9);
-    tris.push_back(t10);
-    tris.push_back(t11);
-    tris.push_back(t12);
-    */
-    Vec3f position(-1.5, 0, 7);
+   /* Vec3f position(-1.5, 0, 7);
 	Cube cube("A");
     Instance c(
         cube,position
@@ -494,13 +428,13 @@ int main()
     Instance a(
         cub, pos
     );
-
+    */
     std::vector<Instance> instances;
-    instances.push_back(a);
-    //instances.push_back(c);
+    instances.push_back(cubeInstance);
 
     RenderScene(instances, K);
     savePPM(K, "./out.ppm");
+    
 
 
     

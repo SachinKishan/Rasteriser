@@ -48,6 +48,24 @@ public:
         }
     }
 
+    friend Matrix44 operator *(Matrix44<float> a,Matrix44<float> b)
+    {
+        Matrix44 c;
+        c.multiply(a, b, c);
+        return c;
+    }
+    void out()
+    {
+	    for(int i=0;i<4;i++)
+	    {
+		    for(int j=0;j<4;j++)
+		    {
+                std::cout << x[i][j]<<" ";
+		    }
+            std::cout << std::endl;
+	    }
+    }
+
     Matrix44 transposed() const
     {
         return Matrix44(x[0][0],
@@ -163,21 +181,67 @@ public:
     }
 
 };
-/*
-class RotationMatrix :public Matrix44<float>
+
+
+class RotationMatrixX :public Matrix44<float>
+{
+public:
+    RotationMatrixX() = default;
+    RotationMatrixX(float degrees)
+        :Matrix44<float>
+			(1, 0, 0, 0,
+            0, cos(degrees), -sin(degrees), 0,
+            0, sin(degrees), cos(degrees), 0,
+            0, 0, 0){}
+};
+
+class RotationMatrixY :public Matrix44<float>
 {
 public:
 
+    RotationMatrixY() = default;
+    RotationMatrixY(float degrees)
+        :Matrix44<float>
+        (cos(degrees), 0, sin(degrees), 0,
+            0, 1,0, 0,
+            -sin(degrees), 0, cos(degrees), 0,
+            0, 0, 0) {}
+};
 
-    TranslationMatrix(float _x, float _y, float _z)
-        :Matrix44<float>(1, 0, 0, 0,
-            0, 1, 0, 0,
+class RotationMatrixZ :public Matrix44<float>
+{
+public:
+
+    RotationMatrixZ() = default;
+    RotationMatrixZ(float degrees)
+        :Matrix44<float>
+        (cos(degrees), -sin(degrees), 0, 0,
+            sin(degrees), cos(degrees), 0, 0,
             0, 0, 1, 0,
-            _x, _y, _z)
+            0, 0, 0) {}
+};
+
+class ScaleMatrix:public Matrix44<float>
+{
+public:
+    ScaleMatrix() = default;
+    ScaleMatrix(Vec3f scale):
+		Matrix44<float>(
+        scale.x,0,0,0,
+        0,scale.y,0,0,
+        0,0,scale.z,0,
+        0,0,0)
+    {
+	    
+    }
+    ScaleMatrix(float scale) :
+        Matrix44<float>(
+            scale, 0, 0, 0,
+            0, scale, 0, 0,
+            0, 0, scale, 0,
+            0, 0, 0)
     {
 
     }
-
-
 };
-*/
+

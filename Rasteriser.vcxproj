@@ -148,6 +148,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="ModelInstance.h" />
     <ClInclude Include="Point.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

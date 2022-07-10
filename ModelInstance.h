@@ -4,6 +4,8 @@
 
 #include "Geometry.h"
 #include "Triangle.h"
+#include "Transform.h"
+
 
 
 class ShapeModel//this is supposed to be called model 
@@ -72,6 +74,8 @@ class Cube:public ShapeModel
 	}
 };
 
+  
+
 class Instance
 {
 public:
@@ -79,11 +83,11 @@ public:
     ShapeModel model;
 
     //I think positioning can change and depend on model context, we'll look into this after implementing basic cubes
-
-    Vec3f position;//the vector by which each vertex is moved from origin
+    Transform transform;
+    
 
     Instance() = default;
-    Instance(ShapeModel _model, Vec3f _position=VectorZero):model(_model),position(_position)
+    Instance(ShapeModel _model, Transform t):model(_model),transform(t)
     {
 	    
     }
