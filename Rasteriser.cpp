@@ -20,7 +20,7 @@ using std::vector;
 
 
 int ch = 1000, cw = 1000;//raster space
-int vh = 5, vw = 5;//aint //viewport space height, width, known as canvas in some places
+int vh = 1, vw = 1;//aint //viewport space height, width, known as canvas in some places
 float d = - 1;//distance between camera and canvas
 
 vector<float> Interpolate(int i0,float d0,int i1,float d1)
@@ -241,7 +241,7 @@ void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb f
     
    
 
-    float m = floor(x02.size()/2);
+    auto m = static_cast<float>(floor(x02.size()/2));
     
     if (x02[m] < x012[m])
     {
@@ -328,14 +328,14 @@ void DrawFilledModel(Image& image)//this is constant for now
     }*/
 }
 
-
+/*
 Vec2f ViewportToCanvas(Vec2f p)
 {
     Vec2f coord(p.x*cw/vw,p.y*cw/vw);
     //vec coordpixel(coord.x, coord.y);
     return coord;
 }
-
+*/
 Point ProjectVertex(Vec3f vertex)
 {
     //world to camera
@@ -363,12 +363,16 @@ void RenderObject(vector<Triangle> triangles, Image& image)
         0, 1, 0, 0,
         0, 0, 1, 0,
         -1.5, 0, 7);
+
+    TranslationMatrix mat(-1.5, 0, 7);
     for (Triangle t : triangles)
     {
 
-        Vec3f a=translation.multiplyVectorMatrix(t.a);
-        Vec3f b=translation.multiplyVectorMatrix(t.b);
-        Vec3f c=translation.multiplyVectorMatrix(t.c);
+        
+
+        Vec3f a=mat.multiplyVectorMatrix(t.a);
+        Vec3f b=mat.multiplyVectorMatrix(t.b);
+        Vec3f c=mat.multiplyVectorMatrix(t.c);
         
         
         

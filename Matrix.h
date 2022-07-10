@@ -139,3 +139,37 @@ public:
 };
 
 
+class TranslationMatrix :public Matrix44<float>
+{
+public:
+
+    
+    TranslationMatrix(float _x, float _y,float _z)
+		:Matrix44<float>(1, 0, 0, 0,
+						 0, 1, 0, 0,
+						 0, 0, 1, 0,
+						 _x, _y, _z)
+    {
+        
+    }
+
+
+};
+/*
+class RotationMatrix :public Matrix44<float>
+{
+public:
+
+
+    TranslationMatrix(float _x, float _y, float _z)
+        :Matrix44<float>(1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            _x, _y, _z)
+    {
+
+    }
+
+
+};
+*/
