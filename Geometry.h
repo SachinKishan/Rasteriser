@@ -44,6 +44,8 @@ typedef Vec2<int>   Point;
 typedef Vec3<float> Vec3f;
 typedef Vec3<int>   Vec3i;
 
+const Vec3f VectorZero(0, 0, 0);
+
 template <class t> std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {
 	s << "(" << v.x << ", " << v.y << ")\n";
 	return s;

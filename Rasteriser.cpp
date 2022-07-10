@@ -15,13 +15,13 @@
 #include "Model.h"
 #include "Triangle.h"
 #include "Matrix.h"
-
+#include "ModelInstance.h"
 using std::vector;
 
 
 int ch = 1000, cw = 1000;//raster space
 int vh = 1, vw = 1;//aint //viewport space height, width, known as canvas in some places
-float d = - 1;//distance between camera and canvas
+float d = 1;//distance between camera and canvas
 
 vector<float> Interpolate(int i0,float d0,int i1,float d1)
 {
@@ -350,22 +350,18 @@ Point ProjectVertex(Vec3f vertex)
     
     //NDC to Raster
 
-    Point p(pNDC.x * cw, (1- pNDC.y) * ch);
+    Point p(pNDC.x * cw, (1-pNDC.y) * ch);
 
     return (p);
 }
 
 
-void RenderObject(vector<Triangle> triangles, Image& image)
+void RenderObject(Instance instance, Image& image)
 {
 
-    Matrix44<float> translation(1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        -1.5, 0, 7);
-
-    TranslationMatrix mat(-1.5, 0, 7);
-    for (Triangle t : triangles)
+   
+    TranslationMatrix mat(instance.position);
+    for (Triangle t : instance.model.triangles)
     {
 
         
@@ -383,6 +379,14 @@ void RenderObject(vector<Triangle> triangles, Image& image)
         
         DrawWireFrameTriangle(q, r, s, image,t.color);
     }
+}
+
+void RenderScene(const std::vector<Instance>& instances,Image& image)
+{
+	for(auto& i:instances)
+	{
+        RenderObject(i, image);
+	}
 }
 
 int main()
@@ -411,7 +415,7 @@ int main()
     
     
    
-    
+    /*
     Vec3f p1(1, 1, 1);
     Vec3f p2(-1, 1, 1);
     Vec3f p3(-1, -1, 1);
@@ -449,7 +453,7 @@ int main()
  8 = 4, 5, 1, purple
  9 = 4, 1, 0, purple
 10 = 2, 6, 7, cyan
-11 = 2, 7, 3, cyan*/
+11 = 2, 7, 3, cyan
     Triangle t1(p1, p2, p3, Image::kRed);
     Triangle t2(p1, p3, p4, Image::kRed);
     Triangle t3(p5, p1, p4, Image::kBlue);
@@ -477,8 +481,25 @@ int main()
     tris.push_back(t10);
     tris.push_back(t11);
     tris.push_back(t12);
+    */
+    Vec3f position(-1.5, 0, 7);
+	Cube cube("A");
+    Instance c(
+        cube,position
+    );
 
-    RenderObject(tris, K);
+
+    Vec3f pos(1.75, 2, 7);
+    Cube cub("A");
+    Instance a(
+        cub, pos
+    );
+
+    std::vector<Instance> instances;
+    instances.push_back(a);
+    //instances.push_back(c);
+
+    RenderScene(instances, K);
     savePPM(K, "./out.ppm");
 
 

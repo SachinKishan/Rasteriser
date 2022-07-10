@@ -153,6 +153,14 @@ public:
         
     }
 
+    TranslationMatrix(Vec3f translate)
+        :Matrix44<float>(1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            translate.x, translate.y, translate.z)
+    {
+
+    }
 
 };
 /*

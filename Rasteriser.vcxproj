@@ -146,6 +146,7 @@
     <ClInclude Include="ImageHeader.h" />
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelInstance.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="Triangle.h" />
   </ItemGroup>
