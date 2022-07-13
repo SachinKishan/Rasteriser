@@ -81,8 +81,6 @@ class Instance
 public:
 
     ShapeModel model;
-
-    //I think positioning can change and depend on model context, we'll look into this after implementing basic cubes
     Transform transform;
     
 

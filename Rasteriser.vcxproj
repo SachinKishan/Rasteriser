@@ -142,6 +142,7 @@
     <ClCompile Include="Rasteriser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="ImageHeader.h" />
     <ClInclude Include="Matrix.h" />

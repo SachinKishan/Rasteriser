@@ -54,6 +54,13 @@ public:
         c.multiply(a, b, c);
         return c;
     }
+
+    friend Matrix44 operator *(Matrix44<float> a,float f)
+    {
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)a[i][j]=a[i][j] * f;
+        return a;
+    }
     void out()
     {
 	    for(int i=0;i<4;i++)
@@ -140,7 +147,7 @@ public:
     {
         Vec3f destination;
         float a, b, c, w;
-
+        //vector is in row form. Vector * Matrix (V*M)
         a = src.x * x[0][0] + src.y * x[1][0] + src.z * x[2][0] + x[3][0];
         b = src.x * x[0][1] + src.y * x[1][1] + src.z * x[2][1] + x[3][1];
         c = src.x * x[0][2] + src.y * x[1][2] + src.z * x[2][2] + x[3][2];
@@ -154,7 +161,115 @@ public:
         return destination;
 
     }
+    /*
+    Matrix44<T>& invert()
+    {
+        Matrix44<T> mat;
+        for (unsigned column = 0; column < 4; ++column) {
+            // Swap row in case our pivot point is not working
+            if (x[column][column] == 0) {
+                unsigned big = column;
+                for (unsigned row = 0; row < 4; ++row)
+                    if (fabs(x[row][column]) > fabs(x[big][column])) big = row;
+                // Print this is a singular matrix, return identity ?
+                if (big == column) fprintf(stderr, "Singular matrix\n");
+                // Swap rows                               
+                else for (unsigned j = 0; j < 4; ++j) {
+                    std::swap(x[column][j], x[big][j]);
+                    std::swap(mat.x[column][j], mat.x[big][j]);
+                }
+            }
+            // Set each row in the column to 0  
+            for (unsigned row = 0; row < 4; ++row) {
+                if (row != column) {
+                    T coeff = x[row][column] / x[column][column];
+                    if (coeff != 0) {
+                        for (unsigned j = 0; j < 4; ++j) {
+                            x[row][j] -= coeff * x[column][j];
+                            mat.x[row][j] -= coeff * mat.x[column][j];
+                        }
+                        // Set the element to 0 for safety
+                        x[row][column] = 0;
+                    }
+                }
+            }
+        }
+        // Set each element of the diagonal to 1
+        for (unsigned row = 0; row < 4; ++row) {
+            for (unsigned column = 0; column < 4; ++column) {
+                mat.x[row][column] /= x[row][row];
+            }
+        }
+        mat.out();
+        *this = mat;
+        return *this;
+    }*/
+
+
+    Matrix44<float> invert()
+    {
+        Matrix44<float> inverse;
+        float determinant =
+            x[0][0]
+				*( AddAndMultiply(1,1,2,2,3,3,1,2,2,3,3,1,1,3,2,1,3,2,1,3,2,2,3,1,1,2,2,1,3,3,1,1,2,3,3,2));
+
+        determinant -= x[1][0] *
+				( AddAndMultiply(0,1,2,2,3,3,0,2,2,3,3,1,0,3,2,1,3,2,0,3,2,2,3,1,0,2,2,1,3,3,0,1,2,3,3,2));
+
+        determinant+=x[2][0]*
+				( AddAndMultiply(0,1,1,2,3,3,0,2,1,3,3,1,0,3,1,1,3,2,0,3,1,2,3,1,0,2,1,1,3,3,0,1,1,3,3,2));
+
+        determinant-=x[3][0]*
+				( AddAndMultiply(0,1,1,2,2,3,0,2,1,3,2,1,0,3,1,1,2,2,0,3,1,2,2,1,0,2,1,1,2,3,0,1,1,3,2,2));
+
+    	inverse[0][0]=
+				( x[1][1] * x[2][2] * x[3][3]
+                + x[1][2] * x[2][3] * x[3][1]
+                + x[1][3] * x[2][1] * x[3][2]
+                - x[1][3] * x[2][2] * x[3][1]
+                - x[1][2] * x[2][1] * x[3][3]
+                - x[1][1] * x[2][3] * x[3][2]);
+#pragma region
+        inverse[0][0] = AddAndMultiply(1,1,2,2,3,3,1,2,2,3,3,1,1,3,2,1,3,2,1,3,2,2,3,1,1,2,2,1,3,3,1,1,2,3,3,2);
+        inverse[0][1] -= AddAndMultiply(0, 1, 2, 2, 3, 3, 0, 2, 2, 3, 3, 1, 0, 3, 2, 1, 3, 2, 0, 3, 2, 2, 3, 1, 0, 2, 2, 1, 3, 3, 0, 1, 2, 3, 3, 2);
+        inverse[0][2] = AddAndMultiply(0,1,1,2,3,3,0,2,1,3,3,1,0,3,1,1,3,2,0,3,1,2,3,1,0,2,1,1,3,3,0,1,1,3,3,2);
+        inverse[0][3] -= AddAndMultiply(0,1,1,2,2,3,0,2,1,3,2,1,0,3,1,1,2,2,0,3,1,2,2,1,0,2,1,1,2,3,0,1,1,3,2,2);
+        inverse[1][0] -= AddAndMultiply(0,1,2,2,3,3,1,2,2,3,3,0,1,3,2,0,3,2,1,3,2,2,3,0,1,2,2,0,3,3,1,0,2,3,3,2);
+    	inverse[1][1] = AddAndMultiply(0, 0, 2, 2, 3, 3, 0, 2, 2, 3, 3, 0, 0, 3, 2, 0, 3, 2, 0, 3, 2, 2, 3, 0, 0, 2, 2, 0, 3, 3, 0, 0, 2, 3, 3, 2);
+        inverse[1][2] -= AddAndMultiply(0,0,1,2,3,3,0,2,1,3,3,0,0,3,1,0,3,2,0,3,1,2,3,0,0,2,1,0,3,3,0,0,1,3,3,2);
+        inverse[1][3] = AddAndMultiply(0,0,1,2,2,3,0,2,1,3,2,0,0,3,1,0,2,2,0,3,1,2,2,0,0,2,1,0,2,3,0,0,1,3,2,2);
+        inverse[2][0] = AddAndMultiply(1,0,2,1,3,3,1,1,2,3,3,0,1,3,2,0,3,1,1,3,2,1,3,0,1,1,2,0,3,3,1,0,2,3,3,1);
+        inverse[2][1] -= AddAndMultiply(0,0,2,1,3,3,0,1,2,3,3,0,0,3,2,0,3,1,0,3,2,1,3,0,0,1,2,0,3,3,0,0,2,3,3,1);
+        inverse[2][2] = AddAndMultiply(0, 0, 1, 1, 3, 3, 0, 1, 1, 3, 3, 0, 0, 3, 1, 0, 3, 1, 0, 3, 1, 1, 3, 0, 0, 1, 1, 0, 3, 3, 0, 0, 1, 3, 3, 1);
+    	inverse[2][3] -= AddAndMultiply(0, 0, 1, 1, 2, 3, 0, 1, 1, 3, 2, 0, 0, 3, 1, 0, 2, 1, 0, 3, 1, 1, 2, 0, 0, 1, 1, 0, 2, 3, 0, 0, 1, 3, 2, 1);
+        inverse[3][0] -= AddAndMultiply(1,0,2,1,3,2,1,1,2,2,3,0,1,2,2,0,3,1,1,2,2,1,3,0,1,1,2,0,3,2,1,0,2,2,3,1);
+        inverse[3][1] = AddAndMultiply(0, 0, 2, 1, 3, 2, 0, 1, 2, 2, 3, 0, 0, 2, 2, 0, 3, 1, 0, 2, 2, 1, 3, 0, 0, 1, 2, 0, 3, 2, 0, 0, 2, 2, 3, 1);
+        inverse[3][2] -= AddAndMultiply(0, 0, 1, 1, 3, 2, 0, 1, 1, 2, 3, 0, 0, 2, 1, 0, 3, 1, 0, 2, 1, 1, 3, 0, 0, 1, 1, 0, 3, 2, 0, 0, 1, 2, 3, 1);
+        inverse[3][3] = AddAndMultiply(0, 0, 1, 1, 2, 2, 0, 1, 1, 2, 2, 0, 0, 2, 1, 0, 2, 1, 0, 2, 1, 1, 2, 0, 0, 1, 1, 0, 2, 2, 0, 0, 1, 2, 2, 1);
+        
+#pragma endregion
+
+        //std::cout << std::endl << determinant;
+        inverse = inverse * determinant;
+        return inverse;
+    }
+	float AddAndMultiply(
+        int a1, int a2, int a3, int a4, int a5, int a6,
+        int a7, int a8, int a9, int a10, int a11, int a12,
+        int a13, int a14, int a15, int a16, int a17, int a18,
+        int a19, int a20, int a21, int a22, int a23, int a24,
+        int a25, int a26, int a27, int a28, int a29, int a30,
+        int a31, int a32, int a33, int a34, int a35, int a36)
+    {
+        return x[a1][a2] * x[a3][a4] * x[a5][a6] +
+            x[a7][a8] * x[a9][a10] * x[a11][a12] +
+            x[a13][a14] * x[a15][a16] * x[a17][a18] -
+            x[a19][a20] * x[a21][a22] * x[a23][a24] -
+            x[a25][a26] * x[a27][a28] * x[a29][a30] -
+            x[a31][a32] * x[a33][a34] * x[a35][a36];
+    }
 };
+
 
 
 class TranslationMatrix :public Matrix44<float>

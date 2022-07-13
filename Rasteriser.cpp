@@ -14,14 +14,18 @@
 #include "Geometry.h"
 #include "Model.h"
 #include "Triangle.h"
-#include "Matrix.h"
+#include "Camera.h"
+
 #include "ModelInstance.h"
 using std::vector;
 
 
 int ch = 1000, cw = 1000;//raster space
-int vh = 1, vw = 1;//aint //viewport space height, width, known as canvas in some places
-float d = 1;//distance between camera and canvas
+
+Vec3f cameraRotation(0,0,0);
+Vec3f cameraPosition(0,0,0);
+Transform cameraTransform(cameraPosition, cameraRotation, 1);
+Camera camera(cameraTransform,1,1,1);
 
 vector<float> Interpolate(int i0,float d0,int i1,float d1)
 {
@@ -328,29 +332,34 @@ void DrawFilledModel(Image& image)//this is constant for now
     }*/
 }
 
-/*
-Vec2f ViewportToCanvas(Vec2f p)
-{
-    Vec2f coord(p.x*cw/vw,p.y*cw/vw);
-    //vec coordpixel(coord.x, coord.y);
-    return coord;
-}
-*/
 Point ProjectVertex(Vec3f vertex)
 {
     //world to camera
+    vertex=camera.InvertPointToCamera(vertex);
 
-    //camera to screen/image space
+	//camera to screen/image space
 
-    Vec2f pScreen(vertex.x * d / -vertex.z, vertex.y * d / -vertex.z);
+    const Vec2f pScreen(vertex.x * camera.d / -vertex.z, vertex.y * camera.d / -vertex.z);
     
     //screen to NDC space
     
-    Vec2f pNDC((pScreen.x + vw * 0.5) / vw, (pScreen.y + vh * 0.5) / vh);
+    const Vec2f pNDC((pScreen.x + camera.cameraViewWidth * 0.5) / camera.cameraViewWidth, 
+        (pScreen.y + camera.cameraViewHeight * 0.5) / camera.cameraViewHeight);
     
     //NDC to Raster
 
-    Point p(pNDC.x * cw, (1-pNDC.y) * ch);
+    const Point p(pNDC.x * cw, (pNDC.y) * ch);
+
+    //To do: fit this entire process into one constant matrix
+    /*
+    //3D to canvas matrix
+    Matrix44<float> mat(d * cw / vw, 0, 0, 0,
+        0, d * ch / vh, 0, 0,
+        0, 0, 1, 0,
+        0,0,0,1);
+
+    mat.multiplyVectorMatrix(vertex);
+    */
 
     return (p);
 }
@@ -388,52 +397,22 @@ int main()
     Image K(cw, ch);
     std::cout << "We Work!\n";
 
-
-    /*
-    * Pixel by pixel rendering
-    for (int j = h - 1; j > 0; j--)
-    {
-        for (int i = 0; i < w; i++)
-        {
-            color pixel_color(0, 0, 0);
-           
-
-            //write_color(std::cout, pixel_color, samples_per_pixel);
-            auto r = pixel_color.x();
-            auto g = pixel_color.y();
-            auto b = pixel_color.z();
-            K(i, h - j) = Image::Rgb(r, g, b);
-            write_color(std::cout, pixel_color);
-        }
-    }*/
-
-
-    Vec3f position(1.5, 0, 7);
+    
+    Vec3f position(1, 0, 7);
     Vec3f rotation(0, 0, 0);
-    float scale = 2;
-
+    Vec3f scale(2,1,1);
+    
     Transform t(position,rotation,scale);
     Cube cube("A");
     Instance cubeInstance(cube, t);
 
-   /* Vec3f position(-1.5, 0, 7);
-	Cube cube("A");
-    Instance c(
-        cube,position
-    );
-
-
-    Vec3f pos(1.75, 2, 7);
-    Cube cub("A");
-    Instance a(
-        cub, pos
-    );
-    */
+   
     std::vector<Instance> instances;
     instances.push_back(cubeInstance);
 
     RenderScene(instances, K);
-    savePPM(K, "./out.ppm");
+
+	savePPM(K, "./out.ppm");
     
 
 
