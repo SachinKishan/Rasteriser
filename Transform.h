@@ -49,11 +49,6 @@ public:
     {
         CalculateRotationMatrix();
     }
-
-    
-
-
-
 };
 
 inline Vec3f ApplyTransform(Vec3f input, Transform t)
@@ -63,11 +58,3 @@ inline Vec3f ApplyTransform(Vec3f input, Transform t)
     const Vec3f translated = t.positionMatrix.multiplyVectorMatrix(rotated);
     return translated;
 }
-
-/*
- *order of transformation
- *scale
- *rotate
- *translate
- *
- */

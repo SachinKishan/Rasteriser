@@ -14,13 +14,28 @@ public:
 	std::string name;
 	std::vector<Vec3f> vertices;
 	std::vector<Triangle> triangles;
+	float r;//radius of the bounding sphere
+    Vec3f center;//local to the other vertices. Not in world space.
 	ShapeModel() = default;
 	ShapeModel(const std::string& _name):name(_name){}
 	ShapeModel(const std::string& _name, std::vector<Vec3f> verts, std::vector<Triangle> tris):name(_name), vertices(verts),triangles(tris)
 	{
-				
+        center = CalculateBoundingSphere();
+        
 	}
-
+	Vec3f CalculateBoundingSphere()
+	{
+        
+        Vec3f c;
+        r = 0;
+		for(Vec3f v:vertices)
+		{
+            c = c + v;
+            if (r < v.norm())r = v.norm();
+		}
+        c = c * (float)(1. / (double)vertices.size());
+        return c;
+	}
 };
 
 class Cube:public ShapeModel
@@ -56,7 +71,7 @@ class Cube:public ShapeModel
         Triangle t8(p2, p7, p3, Image::kPurple);
         Triangle t9(p5, p6, p2, Image::kYellow);
         Triangle t10(p5, p2, p1, Image::kYellow);
-        Triangle t11(p2, p6, p8, Image::kCyan);
+        Triangle t11(p3, p7, p8, Image::kCyan);
         Triangle t12(p3, p8, p4, Image::kCyan);
 
         triangles.push_back(t1);
@@ -71,6 +86,7 @@ class Cube:public ShapeModel
         triangles.push_back(t10);
         triangles.push_back(t11);
         triangles.push_back(t12);
+        
 	}
 };
 
@@ -85,9 +101,9 @@ public:
     
 
     Instance() = default;
-    Instance(ShapeModel _model, Transform t):model(_model),transform(t)
+    Instance(ShapeModel& _model, Transform t):model(_model),transform(t)
     {
-	    
+        model.CalculateBoundingSphere();
     }
 
 

@@ -15,15 +15,19 @@
 #include "Model.h"
 #include "Triangle.h"
 #include "Camera.h"
+#include "Plane.h"
+#include "lodepng.h"
 
 #include "ModelInstance.h"
 using std::vector;
 
 
-int ch = 1000, cw = 1000;//raster space
+int ch = 500, cw = 500;//raster space
+float depth_buffer[500][500];
+
 
 Vec3f cameraRotation(0,0,0);
-Vec3f cameraPosition(0,0,0);
+Vec3f cameraPosition(0,0,2);
 Transform cameraTransform(cameraPosition, cameraRotation, 1);
 Camera camera(cameraTransform,1,1,1);
 
@@ -44,14 +48,39 @@ vector<float> Interpolate(int i0,float d0,int i1,float d1)
     return values;
 
 }
+int colorins=0;
 
-void ColorIn(int x,int y,Image& image, Image::Rgb col)
+std::vector<unsigned char> image;
+
+void encodeOneStep(const char* filename, std::vector<unsigned char>& image, unsigned width, unsigned height) {
+    //Encode the image
+    unsigned error = lodepng::encode(filename, image, width, height);
+
+    //if there's an error, display it
+    if (error) std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+}
+void ColorIn(int x,int y,Image& img, Image::Rgb col)
 {
     
     if (x < 0 || y <= 0 || x>=cw || y>ch)return;
-    std::cout << "x: " << x << " y:" << y << std::endl;
+    ///std::cout << "x: " << x << " y:" << y << std::endl;
     //col.out();
-    image(x, ch - y) = col;
+    colorins++;
+
+
+    img(x, ch - y) = col;
+    
+    unsigned char red = static_cast<unsigned char>(std::min(1.f, col.r) * 255);
+    unsigned char g = static_cast<unsigned char>(std::min(1.f, col.g) * 255);
+    unsigned char b = static_cast<unsigned char>(std::min(1.f, col.b) * 255);
+    //allot color
+    int val = 4 * cw * y + 4 * x;
+    image[val + 0] = red;
+    image[val + 1] = g;
+    image[val + 2] = b;
+    image[val + 3] = 255;//alpha
+    
+
 }
 void swap(int &x0,int &y0,int &x1,int &y1)
 {
@@ -201,13 +230,19 @@ void DrawWireFrameTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rg
     line(p2, p0, image, color);
 }
 
-void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb fillcolor, Image::Rgb linecolor=Image::kWhite)
+void DrawFilledTriangle(Point p0, Point p1, Point p2,Vec3f a,Vec3f b,Vec3f c, Image& image, Image::Rgb fillcolor, Image::Rgb linecolor=Image::kWhite)
 {
     
-  
+	//for shading purposes
     float h0 = 1;
     float h1 = 1;
     float h2 = 1;
+
+	//for z buffer
+    float z0 = a.z;
+    float z1 = b.z;
+    float z2 = c.z;
+
     
     if (p1.y < p0.y)PointSwap(p1, p0);
     if (p2.y < p0.y)PointSwap(p2, p0);
@@ -215,38 +250,147 @@ void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb f
    
     vector<float> x01 = Interpolate(p0.y, p0.x, p1.y, p1.x);
     vector<float> h01 = Interpolate(p0.y, h0, p1.y, h1);
-   
+    vector<float> z01 = Interpolate(p0.y, z0, p1.y, z1);
+
     vector<float> x12 = Interpolate(p1.y, p1.x, p2.y, p2.x);
     vector<float> h12 = Interpolate(p1.y, h1, p2.y, h2);
-
+    vector<float> z12 = Interpolate(p1.y, z1, p2.y, z2);
     
     vector<float> x02 = Interpolate(p0.y, p0.x, p2.y, p2.x);
     vector<float> h02 = Interpolate(p0.y, h0, p2.y, h2);
+    vector<float> z02 = Interpolate(p0.y, z0, p2.y, z2);
     
 
     
     vector<float> x012;
     vector<float> h012;
+    vector<float> z012;
     
+    vector<float> x_left;
+    vector<float> h_left;
+    vector<float> z_left;
+
+    vector<float> x_right;
+    vector<float> h_right;
+    vector<float> z_right;
+    
+    x01.pop_back();
+    h01.pop_back();
+    z01.pop_back();
+
+    x012 = x01;
+    h012 = h01;
+    z012 = z01;
+
+
+    x012.insert(x012.end(), x12.begin(), x12.end());
+    h012.insert(h012.end(), h12.begin(), h12.end());
+    z012.insert(z012.end(), z12.begin(), z12.end());
+
+    auto m = static_cast<float>(floor(x02.size()/2));
+    
+    if (x02[m] < x012[m])
+    {
+        x_left = x02;
+        h_left = h02;
+        z_left = z02;
+
+        x_right = x012;
+        h_right = h012;
+        z_right = z012;
+    }
+    else
+    {
+        x_left = x012;
+        h_left = h012;
+        z_left = z012;
+
+        x_right = x02;
+        h_right = h02;
+        z_right = z02;
+    }
+
+    
+    
+    
+   
+    for (int y = p0.y; y <= p2.y; y++)
+    {
+
+        float x_l = x_left[y - p0.y];
+        float x_r = x_right[y - p0.y];
+        float h_l = h_left[y - p0.y];
+        float h_r = h_right[y - p0.y];
+        float z_l = z_left[y - p0.y];
+        float z_r = z_right[y - p0.y];
+
+
+        vector<float> h_segment = Interpolate(x_l, h_l, x_r, h_r);
+        vector<float> z_segment = Interpolate(x_l, z_l, x_r, z_r);
+        
+        for (float x = x_l; x <= x_r; x++)
+        {
+            float z = z_segment[(x - (int)x_l)];
+            if(z < depth_buffer[(int)x][y])
+            {
+                Image::Rgb finalcol = fillcolor;
+                finalcol *= h_segment[(x - (int)x_l)];
+                depth_buffer[(int)x][y] = z;
+                ColorIn(x, y, image, finalcol);
+
+            }
+            
+        }
+    }
+   // DrawWireFrameTriangle(p0, p1, p2, image, Image::kWhite);
+    
+}
+void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb fillcolor, Image::Rgb linecolor = Image::kWhite)
+{
+
+    //for shading purposes
+    float h0 = 1;
+    float h1 = 1;
+    float h2 = 1;
+
+    if (p1.y < p0.y)PointSwap(p1, p0);
+    if (p2.y < p0.y)PointSwap(p2, p0);
+    if (p2.y < p1.y)PointSwap(p2, p1);
+
+    vector<float> x01 = Interpolate(p0.y, p0.x, p1.y, p1.x);
+    vector<float> h01 = Interpolate(p0.y, h0, p1.y, h1);
+
+    vector<float> x12 = Interpolate(p1.y, p1.x, p2.y, p2.x);
+    vector<float> h12 = Interpolate(p1.y, h1, p2.y, h2);
+
+
+    vector<float> x02 = Interpolate(p0.y, p0.x, p2.y, p2.x);
+    vector<float> h02 = Interpolate(p0.y, h0, p2.y, h2);
+
+
+
+    vector<float> x012;
+    vector<float> h012;
+
     vector<float> x_left;
     vector<float> h_left;
 
     vector<float> x_right;
     vector<float> h_right;
-    
+
     x01.pop_back();
     h01.pop_back();
 
     x012 = x01;
     h012 = h01;
-    
+
     x012.insert(x012.end(), x12.begin(), x12.end());
     h012.insert(h012.end(), h12.begin(), h12.end());
-    
-   
 
-    auto m = static_cast<float>(floor(x02.size()/2));
-    
+
+
+    auto m = static_cast<float>(floor(x02.size() / 2));
+
     if (x02[m] < x012[m])
     {
         x_left = x02;
@@ -264,8 +408,8 @@ void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb f
         x_right = x02;
         h_right = h02;
     }
-  
-   
+
+
     for (int y = p0.y; y <= p2.y; y++)
     {
 
@@ -280,17 +424,19 @@ void DrawFilledTriangle(Point p0, Point p1, Point p2, Image& image, Image::Rgb f
 
         for (float x = x_l; x <= x_r; x++)
         {
-            
-            Image::Rgb finalcol=fillcolor;
-            finalcol*= h_segment[x - x_l];
-            
-           
-            ColorIn(x, y,image, finalcol);
+
+            Image::Rgb finalcol = fillcolor;
+            finalcol *= h_segment[x - x_l];
+
+
+
+            ColorIn(x, y, image, finalcol);
         }
     }
     DrawWireFrameTriangle(p0, p1, p2, image, linecolor);
-    
+
 }
+
 
 
 void DrawFilledModel(Image& image)//this is constant for now
@@ -365,11 +511,33 @@ Point ProjectVertex(Vec3f vertex)
 }
 
 
+int isBackFacing(Triangle t)
+{
+    Vec3f a = t.b - t.a;
+    const Vec3f b = t.c - t.a;
+    const Vec3f normal = a.CrossProduct(b);
+    const Vec3f v = cameraPosition - t.a;
+	return  (normal * v) <= 0;
+}
+
+void BackFaceCulling(ShapeModel object, Camera cam = camera)
+{
+    vector<Triangle> culledTriangles;
+    for (Triangle t : object.triangles)
+    {
+        if (!isBackFacing(t))
+        {
+            culledTriangles.push_back(t);
+        }
+        //else std::cout << "back facing triangle found";
+    }
+}
+
 void RenderObject(const Instance& instance, Image& image)
 {
-
+    
+    BackFaceCulling(instance.model, camera);
    
-
     for (Triangle t : instance.model.triangles)
     {
         //this can optimised
@@ -380,6 +548,7 @@ void RenderObject(const Instance& instance, Image& image)
         Point r=ProjectVertex(b);
         Point s=ProjectVertex(c);
         DrawWireFrameTriangle(q, r, s, image,t.color);
+        //DrawFilledTriangle(q, r, s, a,b,c ,image, t.color, t.color);
     }
 }
 
@@ -387,34 +556,193 @@ void RenderScene(const std::vector<Instance>& instances,Image& image)
 {
 	for(auto& i:instances)
 	{
+        
         RenderObject(i, image);
 	}
 }
 
+template<class T>
+bool OnlyOneIsPositive(T a,T b,T c, int& whichOne)
+{
+
+    if (a > 0)whichOne = 0;
+    else if (b > 0)whichOne = 1;
+    else whichOne = 2;
+    return a>0 && b < 0 && c < 0
+        || a < 0 && b>0 && c < 0
+        || a < 0 && b < 0 && c>0;
+}
+template<class T>
+bool OnlyOneIsNegative(T a, T b, T c, int& whichOne)
+{
+    if (a < 0)whichOne = 0;
+    else if (b < 0)whichOne = 1;
+    else whichOne = 2;
+	return a > 0 && b > 0 && c < 0
+        || a > 0 && b<0 && c > 0
+        || a < 0 && b > 0 && c>0;
+}
+
+
+
+std::vector<Triangle> ClipTriangle(Triangle t,Plane p)
+{
+    std::vector<Triangle> finalTriangles;
+    float d0 = SignedDistance(p, t.a);
+    float d1 = SignedDistance(p, t.b);
+    float d2 = SignedDistance(p, t.c);
+    int vnumber;
+
+    if (d0 > 0 && d1 > 0 && d2 > 0)finalTriangles.push_back(t);
+    else if (d0 < 0 && d1 < 0 && d2 < 0)return finalTriangles;
+    else if (OnlyOneIsPositive(d0, d1, d2, vnumber))
+    {
+        Vec3f a, b, c;
+        if (vnumber == 0)
+        {
+            a = t.a;
+            b = LinePlaneIntersection(p, Line(a, t.b));
+            c = LinePlaneIntersection(p, Line(a, t.c));
+        }//keep a
+        else if (vnumber == 1)
+        {
+            b = t.b;
+            a = LinePlaneIntersection(p, Line(b, t.a));
+            c = LinePlaneIntersection(p, Line(b, t.c));
+
+        }//keep b
+        else if (vnumber == 2)
+        {
+            c = t.c;
+            a = LinePlaneIntersection(p, Line(c, t.a));
+            b = LinePlaneIntersection(p, Line(c, t.b));
+
+        }//keep c
+        finalTriangles.emplace_back(Triangle(a, b, c));
+    }
+    else if (OnlyOneIsNegative(d0, d1, d2, vnumber))
+    {
+        Vec3f a, b, c;
+        if (vnumber == 0)
+        {
+            a = t.a;
+            b = LinePlaneIntersection(p, Line(a, t.b));
+            c = LinePlaneIntersection(p, Line(a, t.c));
+        }//keep a
+        else if (vnumber == 1)
+        {
+            b = t.b;
+            a = LinePlaneIntersection(p, Line(b, t.a));
+            c = LinePlaneIntersection(p, Line(b, t.c));
+
+        }//keep b
+        else if (vnumber == 2)
+        {
+            c = t.c;
+            a = LinePlaneIntersection(p, Line(c, t.a));
+            b = LinePlaneIntersection(p, Line(c, t.b));
+        }//keep c
+        finalTriangles.emplace_back(Triangle(t.a, b, a,t.color));
+        finalTriangles.emplace_back(Triangle(a, t.b, b,t.color));
+    }return finalTriangles;
+}
+
+std::vector<Triangle> ClipTrianglesAgainstPlane(std::vector<Triangle> tris, Plane p)
+{
+    std::vector<Triangle> clipped_tris;
+    for(auto& t:tris)
+    {
+        std::vector<Triangle> newTriangles = ClipTriangle(t, p);
+        clipped_tris.insert(clipped_tris.end(),newTriangles.begin(),newTriangles.end());
+    }
+    return tris;
+}
+
+bool ClipInstanceAgainstPlane(Instance &i, Plane p)
+{
+    const float d = SignedDistance(p, i.model.center);
+    if (d > i.model.r)return true;//completely in bounds
+    else if (d < -i.model.r)return false;//completely not in bounds
+    else//partially in bounds- make new triangles
+    {
+        i.model.triangles = ClipTrianglesAgainstPlane(i.model.triangles, p);
+    	return true;
+    }
+}
+
+bool ClipInstance(Instance& i, const std::vector<Plane>& planes)
+{
+    for(auto p:planes)
+    {
+        const bool clipped = ClipInstanceAgainstPlane(i, p);
+        if (!clipped)return false;
+    }
+    return true;
+}
+//clipping
+void ClipScene(std::vector<Instance>& instances, const std::vector<Plane>& planes)
+{
+    std::vector<Instance> clippedInstances;
+    for(auto& i:instances)
+    {
+        const bool clipped = ClipInstance(i, planes);
+        if (clipped)clippedInstances.push_back(i);
+    }
+    instances=clippedInstances;
+
+}
+
+
 int main()
 {
-    
-    Image K(cw, ch);
+   // const char* filename = "out2.png";
+    image.resize(cw * ch * 4);
+    Image K = Image(cw, ch);
+
+
+	std::cout << "We Work!\n";
+    for (int i = 0; i < ch; i++)
+        for (int j = 0; j < cw; j++)depth_buffer[i][j] = 10000;//depth buffer initialized to some big value
+
+    Plane top(0, -1, 1, 0);
+    Plane bottom(0, 1, 1, 0);
+    Plane left(1, 0, 1, 0);
+    Plane right(-1, 0, 1, 0);
+    Plane near(0, 0, 1, camera.d);
+    std::vector<Plane> clippingPlanes;
     std::cout << "We Work!\n";
 
-    
-    Vec3f position(1, 0, 7);
-    Vec3f rotation(0, 0, 0);
-    Vec3f scale(2,1,1);
-    
-    Transform t(position,rotation,scale);
-    Cube cube("A");
-    Instance cubeInstance(cube, t);
-
-   
+    float initialRot = 0;
+    float finalRot = 90;
+    float step_size = 1;
+    /*
+    Vec3f positiona(2, 0, 7);
+    Vec3f rotationa(0, 90, 45);
+    Vec3f scalea(2,1,1);
+    Transform ta(positiona,rotationa,scalea);
+    Cube cubea("A");
+    Instance cubeInstancea(cubea, ta);
     std::vector<Instance> instances;
-    instances.push_back(cubeInstance);
-
+	instances.push_back(cubeInstancea);
+    ClipScene(instances, clippingPlanes);
     RenderScene(instances, K);
+    */
 
-	savePPM(K, "./out.ppm");
-    
+    for (int i = 0; i <= 5; i++)
+    {
+        const char* filename = "out" +char(i)+ "png";
+        Vec3f positiona(2, 0, 7);
+        Vec3f rotationa(0, 90, 45);
+        Vec3f scalea(2, 1, 1);
+        Transform ta(positiona, rotationa, scalea);
+        Cube cubea("A");
+        Instance cubeInstancea(cubea, ta);
+        std::vector<Instance> instances;
+        instances.push_back(cubeInstancea);
+        ClipScene(instances, clippingPlanes);
+        RenderScene(instances, K);
 
 
-    
+        encodeOneStep(filename, image, cw, ch);
+    }
 }

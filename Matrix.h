@@ -161,49 +161,6 @@ public:
         return destination;
 
     }
-    /*
-    Matrix44<T>& invert()
-    {
-        Matrix44<T> mat;
-        for (unsigned column = 0; column < 4; ++column) {
-            // Swap row in case our pivot point is not working
-            if (x[column][column] == 0) {
-                unsigned big = column;
-                for (unsigned row = 0; row < 4; ++row)
-                    if (fabs(x[row][column]) > fabs(x[big][column])) big = row;
-                // Print this is a singular matrix, return identity ?
-                if (big == column) fprintf(stderr, "Singular matrix\n");
-                // Swap rows                               
-                else for (unsigned j = 0; j < 4; ++j) {
-                    std::swap(x[column][j], x[big][j]);
-                    std::swap(mat.x[column][j], mat.x[big][j]);
-                }
-            }
-            // Set each row in the column to 0  
-            for (unsigned row = 0; row < 4; ++row) {
-                if (row != column) {
-                    T coeff = x[row][column] / x[column][column];
-                    if (coeff != 0) {
-                        for (unsigned j = 0; j < 4; ++j) {
-                            x[row][j] -= coeff * x[column][j];
-                            mat.x[row][j] -= coeff * mat.x[column][j];
-                        }
-                        // Set the element to 0 for safety
-                        x[row][column] = 0;
-                    }
-                }
-            }
-        }
-        // Set each element of the diagonal to 1
-        for (unsigned row = 0; row < 4; ++row) {
-            for (unsigned column = 0; column < 4; ++column) {
-                mat.x[row][column] /= x[row][row];
-            }
-        }
-        mat.out();
-        *this = mat;
-        return *this;
-    }*/
 
 
     Matrix44<float> invert()
