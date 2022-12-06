@@ -11,4 +11,4 @@ Features:
 5. Z buffer algorithm
 6. 3D obj model loading and drawing
 
-![Optional Text](Rasteriser/Output Examples/3cubes.png )
+![Optional Text](https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/3cubes.png)
