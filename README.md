@@ -17,5 +17,5 @@ Three cubes rendered with z buffering
 ![](https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/3cubes.png)
 
 Cubes with different axes scaling and rotations
-![]([https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/3cubes.png](https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/cubesscaled.png)
+![](https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/3cubes.png](https://github.com/SachinKishan/Rasteriser/blob/main/Output%20Examples/cubesscaled.png)
 
