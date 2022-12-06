@@ -69,7 +69,7 @@ void ColorIn(int x,int y,Image& img, Image::Rgb col)
 
 
     img(x, ch - y) = col;
-    
+   /*
     unsigned char red = static_cast<unsigned char>(std::min(1.f, col.r) * 255);
     unsigned char g = static_cast<unsigned char>(std::min(1.f, col.g) * 255);
     unsigned char b = static_cast<unsigned char>(std::min(1.f, col.b) * 255);
@@ -79,7 +79,7 @@ void ColorIn(int x,int y,Image& img, Image::Rgb col)
     image[val + 1] = g;
     image[val + 2] = b;
     image[val + 3] = 255;//alpha
-    
+    */
 
 }
 void swap(int &x0,int &y0,int &x1,int &y1)
@@ -727,7 +727,7 @@ int main()
     ClipScene(instances, clippingPlanes);
     RenderScene(instances, K);
     */
-
+    /*
     for (int i = 0; i <= 5; i++)
     {
         const char* filename = "out" +char(i)+ "png";
@@ -744,5 +744,9 @@ int main()
 
 
         encodeOneStep(filename, image, cw, ch);
-    }
+    }*/
+    DrawFilledModel(K);
+	savePPM(K, "out.ppm");
+
+	encodeOneStep("out2.png", image, cw, ch);
 }
